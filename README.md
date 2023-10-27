@@ -7,7 +7,7 @@ Open the analysis [jupyter notebook](https://github.com/orena1/Specious_Regulari
 
 
 <p align="center">
-  <img src="https://github.com/orena1/Specious_Regularity/assets/8983713/00adcdc7-3069-44e6-8134-ce2b1faead34" />
+  <img src="https://github.com/orena1/Specious_Regularity/blob/main/Specious_Regularity.png" />
 </p>
 
 
