@@ -1,12 +1,10 @@
 import os
-import jupyter
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
 from tqdm.auto import tqdm
-import scipy
 from scipy.stats import sem
 import matplotlib
 from scipy.stats import ttest_1samp
@@ -158,16 +156,17 @@ def post_process(df):
                     'rewards_freq_ub':'Observed Expectancy (B-)', 'rt_B_m_UB': '$Δ_{RT}$:[(B+)-(B-)]', 'participant_n':'N'}
     return df.rename(columns=column_names, inplace=False)
 
+import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 
 def create_summary_table(df):
-
     H0_per_column = {'Bias':0.5, 'Detected Rewards (B+)':12.5, 'Detected Rewards (B-)':12.5, '$Δ_{Rewards}$:[(B+)-(B-)]':0, 
                      '$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]':0,'Observed Expectancy (B+)':0.25, 'Observed Expectancy (B-)':0.25,
                     '$Δ_{RT}$:[(B+)-(B-)]':0}
-    
+    df = df.drop(columns=['path_name', 'date_full', 'date_raw', 'date_day', 'data', 'N']).copy()
     df_summary = df.groupby("Model/Schedule").mean().sort_values("Bias",ascending=False) # calculate mean per schedule and sort by bias
-    df_count = df.groupby("Model/Schedule").count()
-    df_summary['N'] = df_count['N'] # add number of participants per schedule
+    df_count = df.groupby("Model/Schedule").size()
+    df_summary['N'] = df_count # add number of participants per schedule
 
     # change sort
     manual_sort_start = ['RaCaS','Control (pooled)']
@@ -183,7 +182,7 @@ def create_summary_table(df):
 
     out = pd.concat([df_summary, df_std,df_pval]).groupby(level=0).agg(clean_cell_3)
 
-    out['N'] = df_count['N']
+    out['N'] = df_count
 
     # out.index.names = [column_names['Model/Schedule']]
     #out = out.rename(columns=column_names, index=column_names).loc[:,list(column_names.values())[1:]]
@@ -302,7 +301,7 @@ def Figure_2(df_noPool_noSS00_noRaCaS, df_Pool_RaCaS, rolling_data):
     plt.figure(figsize=(25,5))
     # A
     sns.boxplot(x='Model/Schedule',y='Bias',data=df_noPool_noSS00_noRaCaS,ax=plt.gca(),
-                palette=[colors[0]]*2 + [colors[1]]*(len(sced_sort)-2), showfliers=False)
+                hue='Model/Schedule',palette=[colors[0]]*2 + [colors[1]]*(len(sced_sort)-2), showfliers=False, legend=False)
     scatter_p = getattr(sns,'stripplot')
     np.random.seed(123) # repeat the same stripplot
     scatter_p(x='Model/Schedule', y='Bias', data=df_noPool_noSS00_noRaCaS,ax=plt.gca(),color='k',alpha=0.2)
@@ -376,7 +375,7 @@ def Figure_3(df_noPool_noSS00_noDS01_noDS02, df_Pool_RaCaS, rolling_data):
     # A
     plt.figure(figsize=(25,5))
     sns.boxplot(x='Model/Schedule',y='$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]',data=df_noPool_noSS00_noDS01_noDS02,ax=plt.gca(),
-                palette=[colors[0]] + [colors[1]]*(len(sced_sort)-1), showfliers=False)
+                hue='Model/Schedule', palette=[colors[0]] + [colors[1]]*(len(sced_sort)-1), showfliers=False, legend=False)
     scatter_p = getattr(sns,'stripplot')
     np.random.seed(123) # repeat the same stripplot
     scatter_p(x='Model/Schedule', y='$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]', data=df_noPool_noSS00_noDS01_noDS02,ax=plt.gca(),color='k',alpha=0.2)
@@ -462,6 +461,7 @@ def Figure_3(df_noPool_noSS00_noDS01_noDS02, df_Pool_RaCaS, rolling_data):
     plt.savefig(f'outputs/figure_3/D_dynamic_expectancy.pdf')
 
     # print delta rward norm for RaCaS
+    print('Δ_Rewards (Norm.):[(B+)-(B-)]:[(B+)-(B-)]')
     print("RaCaS, mean = " + str(df_Pool_RaCaS.query('`Model/Schedule`=="RaCaS"')['$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]'].mean()), 'std = ' + str(df_Pool_RaCaS.query('`Model/Schedule`=="RaCaS"')['$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]'].std()))
     # now print median
     print("RaCaS, median = " + str(df_Pool_RaCaS.query('`Model/Schedule`=="RaCaS"')['$Δ_{Rewards}$ (Norm.):[(B+)-(B-)]:[(B+)-(B-)]'].median()))
